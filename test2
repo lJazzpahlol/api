@@ -1,0 +1,323 @@
+int pixelValueDecoded(int column)
+int PlayerUnitInMeleeRangeCount 
+int PlayerMaxPower 
+int PlayerMaxFocus 
+int PlayeMaxEnergy 
+int PlayeMaxRage 
+int PlayeMaxFury 
+int PlayeMaxRunicPower 
+int PlayeMaxAstral 
+int PlayeMaxMaelstrom 
+int PlayerMana 
+int PlayerRuneCD(int runeIndex)
+int PlayerNextRuneCD
+int TargetUnitInRangeCount 
+bool PlayerTrinketIsUsable(int trinketIndex)
+int PlayerTrinketRemainingCD(int trinketIndex)
+bool PlayerIsTalentSelected(int column, int row)
+int UnitBuffRemainingTime(string buffName, string unit)
+int PlayerBuffRemainingTime(string buffName) 
+int TargetBuffRemainingTime(string buffName) 
+int FocusBuffRemainingTime(string buffName) 
+bool UnitHasBuff(string buffName, string unit) 
+bool PlayerHasBuff(string buffName) 
+bool TargetHasBuff(string buffName) 
+bool FocusHasBuff(string buffName) 
+string UnitBuffType(string buffName, string unit)
+string PlayerBuffType(string buffName) 
+string TargetBuffType(string buffName) 
+string FocusBuffType(string buffName) 
+int UnitBuffStacks(string buffName, string unit)
+int PlayerBuffStacks(string buffName) 
+int TargetBuffStacks(string buffName) 
+int FocusBuffStacks(string buffName) 
+bool UnitBuffPlayerSrc(string buffName, string unit)
+bool PlayerBuffPlayerSrc(string buffName) 
+bool TargetBuffPlayerSrc(string buffName) 
+bool FocusBuffPlayerSrc(string buffName) 
+int UnitDebuffRemainingTime(string buffName, string unit)
+int PlayerDebuffRemainingTime(string buffName) 
+int TargetDebuffRemainingTime(string buffName) 
+int FocusDebuffRemainingTime(string buffName) 
+bool UnitHasDebuff(string buffName, string unit) 
+bool PlayerHasDebuff(string buffName) 
+bool TargetHasDebuff(string buffName) 
+bool FocusHasDebuff(string buffName) 
+string UnitDebuffType(string buffName, string unit)
+string PlayerDebuffType(string buffName) 
+string TargetDebuffType(string buffName) 
+string FocusDebuffType(string buffName) 
+int UnitDebuffStacks(string buffName, string unit)
+ (edited)
+[12:50 AM]FmFlex:
+int PlayerDebuffStacks(string buffName) 
+int TargetDebuffStacks(string buffName) 
+int FocusDebuffStacks(string buffName) 
+bool UnitDebuffPlayerSrc(string buffName, string unit)
+bool PlayerDebuffPlayerSrc(string buffName) 
+bool TargetDebuffPlayerSrc(string buffName) 
+bool FocusDebuffPlayerSrc(string buffName) 
+bool AutoAtacking()
+int HealthPercent
+int PlayerPower
+int PlayerFocus 
+int PlayerEnergy 
+int PlayerRage 
+int PlayerFury 
+int PlayerRunicPower 
+int PlayerAstral 
+int PlayerMaelstrom 
+int PlayerCurrentRunes 
+int PlayerCurrentComboPoints 
+int PlayerCurrentSoulShards 
+int PlayerCurrentHolyPower 
+int PlayerCurrentChi 
+int PlayerCurrentArcaneCharges 
+int PlayerLevel
+int PlayerSpecID
+string PlayerRaceName
+int PlayerRaceID
+int UnitHealthPercent(string s)
+int UnitManaPercent(string s)
+int UnitRange(string s)
+int TargetHealthPercent 
+int TargetManaPercent 
+int TargetRange 
+int FocusHealthPercent 
+int FocusManaPercent 
+int FocusRange 
+int PetHealthPercent 
+int PetManaPercent 
+int PetFocusRange 
+int UnitEnergyPercent(string s)
+int UnitRoleSpec(string s)
+bool UnitIsIncombat(string s)
+int TargetEnergyPercent 
+int TargetRoleSpec 
+bool TargetIsIncombat 
+int FocusEnergyPercent 
+int FocusRoleSpec 
+bool FocusIsIncombat 
+int PetEnergyPercent 
+bool PetIsIncombat 
+string LastSpellCast
+int CurrentGroupSize
+bool SpellISOnCooldown(string spellBookSpellName)
+int SpellCDDuration(string spellBookSpellName)
+int SpellMaxCharges(string spellName)
+bool SpellIsCanbeCast(string spellName)
+int SpellChargeCD(string spellName)
+int SpellCharges(string spellName)
+bool SpellISInRange(string spellName, string unit)
+bool SpellISInRange(string spellName) 
+int SpellGCDDuration
+bool SpellIsOnGCD
+bool SpellLastCastFailedLosOrFacing
+float PlayerGetHaste
+bool PlayerIsInCombat
+bool PlayerIsInPVP
+bool PlayerIsDead
+bool PlayerIsMounted
+bool PlayerHasPet
+bool PlayerIsUsingVehicule
+ (edited)
+[12:50 AM]FmFlex:
+bool PlayerIsMoving
+bool PlayerIsOutdoor
+bool PlayerIsInRaid
+bool PlayerIsInGroup
+bool PlayerCanAttackTarget
+bool TargetIsBoss
+bool PlayerIsAutoAttack
+bool UnitCanInterrupted(String unit)
+bool PlayerCanInterrupted 
+bool TargetCanInterrupted 
+bool FocusCanInterrupted 
+int CurrentCastSpellID(String unit)
+int PlayerCurrentCastSpellID 
+int TargetCurrentCastSpellID 
+int FocusCurrentCastSpellID 
+bool UnitIsChanneling(String unit)
+bool PlayerIsChanneling 
+bool TargetIsChanneling 
+bool FocusIsChanneling 
+int UnitCurrentCastTime(String unit) // cast time spent
+int PlayerCurrentCastTime 
+int TargetCurrentCastTime 
+int FocusCurrentCastTime 
+int UnitCurrentCastTimeRemaining(String unit)
+bool UnitIsCasting(String unit) 
+bool PlayerIsCasting 
+bool TargetIsCasting 
+bool FocusIsCasting 
+int PlayerCurrentCastTimeRemaining 
+int TargetCurrentCastTimeRemaining 
+int FocusCurrentCastTimeRemaining 
+bool CanCast(string spellBookSpellName,
+void CastSpellByName(string spellBookSpellName)
+ (edited)
+November 22, 2020
+[7:03 AM]FmFlex: I just added :
+MacroIsIgnored(string spellBookMacroName)
+SpellIsIgnored(string spellBookSpellName)
+ (edited)
+[7:04 AM]FmFlex: related to the new ignore feature in the spellbook
+FmFlex
+ pinned 
+a message
+ to this channel. See all 
+pinned messages
+.
+ — 11/22/2020 3:36 PM
+December 2, 2020
+[2:35 PM]FmFlex:
+ CombatRoutine.AddConduit("Impenetrable Gloom");
+API.PlayerIsConduitSelected("Impenetrable Gloom");
+ (edited)
+December 20, 2020
+[3:10 AM]FmFlex:
+API.PlayerIsCC(CCList.STUN))
+[3:10 AM]FmFlex: added
+[3:10 AM]FmFlex: CClist is an enum that contain all the cc supported
+December 21, 2020
+[1:03 AM]FmFlex:
+PlayerItemRemainingCD, PlayerItemCanUse, addItem(string name,int ItemID)
+December 29, 2020
+[6:43 PM]FmFlex:
+API.PlayerSpellonCursor
+ return a bool if there is a "blue casting hand" cursor in game
+[6:44 PM]FmFlex: can be use to pause elk when casting a grounded spell with reticule manually
+January 31, 2021
+[2:38 AM]FmFlex: New API : API.PlayerWeaponBuffDuration(bool IsMain)
+[2:38 AM]FmFlex: (for shaman, rogue poison are simple buf in shadowland
+April 1, 2021
+[6:44 PM]FmFlex: UnitIsUnit(String unit) added to who mouseover and target are for friendly unit
+[6:44 PM]FmFlex: MouseoverIsUnit() and TargetIsUnit()
+[6:45 PM]FmFlex: also exist
+[7:32 PM]FmFlex: added : public static string AddConduit(string name, int spellid)
+[7:32 PM]FmFlex: conduit can now be used with spellid for fully non language dependent CR
+May 13, 2021
+[4:41 PM]FmFlex: Added support for encrypted rotation
+May 27, 2021
+[6:04 PM]FmFlex: Added :  public static int TargetGUIDNPCID Retrieve the NPC ID from your target.
+Same added for Mouseover and focus: (edited)
+[6:34 PM]FmFlex: public static int MouseoverGUIDNPCID 
+        public static int FocusGUIDNPCID
+May 28, 2021
+[3:18 AM]FmFlex:
+TBC version is almost ready if anyone want to test it and test their own rotation please PM me. (Rotations are not available, only API)
+ (edited)
+[7:58 PM]FmFlex: 4 API added for TBC: 
+        public static int Classic_PlayerShapeShiftForm 
+        public static int Classic_PlayerMainSwingTimer 
+        public static int Classic_PlayerOffSwingTimer 
+        public static int Classic_TargetOffSwingTimer 
+The SwingTimer requires to have the addon: WeaponSwingTimer SixxFix installed.
+https://www.curseforge.com/wow/addons/weaponswingtimer-sixxfix (edited)
+May 29, 2021
+[4:54 AM]FmFlex: Added : PlayerIsBehindTargetDuration (give you the duration since the last time you could not cast a spell because your were not behind the target or in front of the target)
+May 31, 2021
+[4:18 PM]FmFlex: Added:      int LastSpellCastCount (count the number of time you cast a spell in a row)
+[7:30 PM]FmFlex:
+Added: 
+public static int[] numbPercentListshort  //number from 1 to 100
+public static int[] numbPercentListLong  // number from 0, 10, 20 , 30, to 100
+   
+public static int[] numbPartyList 
+public static int[] numbRaidList 
+
+public static string[] partyunits 
+public static string[] raidunits 
+
+public static int UnitBelowHealthPercentRaid(int HealthPercent) 
+public static int UnitBelowHealthPercentParty(int HealthPercent) 
+public static int UnitBelowHealthPercent(int HealthPercent) 
+public static int UnitBelowManaPercentRaid(int ManaPercent) 
+public static int UnitBelowManaPercentParty(int ManaPercent) 
+public static int UnitBelowManaPercent(int ManaPercent) 
+public static int UnitAboveHealthPercentRaid(int HealthPercent) 
+public static int UnitAboveHealthPercentParty(int HealthPercent) 
+public static int UnitAboveHealthPercent(int HealthPercent) 
+public static int UnitRangeCountParty(int Range) 
+public static int UnitRangeCountRaid(int Range) 
+public static int UnitRangeCount(int Range) 
+public static int unitBuffCountRaid(string buff) 
+public static int UnitBuffCountParty(string buff) 
+public static int UnitBuffCount(string buff) 
+ (edited)
+June 14, 2021
+[2:35 AM]FmFlex: Added
+[2:36 AM]FmFlex:
+int Classic_PlayerEnergyTickRemaining , time before next energy tick
+int Classic_PlayerTalentCount(page,talent) count the number of point in a talent
+int PlayerIsTalentSelected can also be used for classic now
+June 19, 2021
+[3:18 PM]FmFlex: added :  public static int classic_SpellIsKnown(string spellName)
+October 11, 2021
+[1:02 PM]FmFlex: added SpellCount(string spellName) ( for spells like implosion , druid stack etc ...)
+November 13, 2021
+[5:35 PM]FmFlex: added PlayerItemCount(string itemName)
+[7:29 PM]FmFlex: added PlayerCanAttackFocus
+December 17, 2021
+[7:02 PM]FmFlex: Added : DebuffEnnemyCount(string debuffName)
+count how many ennemy have a debuff ( from nameplate) , no range restriction.
+January 23, 2022
+[1:47 PM]FmFlex:
+int MouseoverMaxHealth
+int PlayerTotemFire1Duration 
+int PlayerTotemEarth2Duration 
+int PlayerTotemWater3Duration 
+int PlayerTotemAir4Duration 
+February 22, 2022
+[2:23 PM]FmFlex:
+int UnitTTD(string unit)  
+int TargetTTD
+int MouseoverTTD
+int FocusTTD
+int Boss1TTD
+int Boss2TTD 
+int Boss3TTD 
+int LowestTTD()
+int HighestTTD()
+string UnitTargetUnit(string unit) 
+bool retail_hasLegendaryID(int LegendaryID) //with support of 2 legendary item for 9.2
+int retail_LegendaryID2  //ID of the second legendary
+int retail_TierSetCount  // Count set items equipped for 9.2
+February 27, 2022
+[3:05 AM]FmFlex:
+unitGetDRCount(string DRtype, string Unit) 
+UnitGetNextDR(string DRtype, string Unit)
+GetMaxDRCount
+CONST.CDRLIST = { "root", "stun", "disorient", "silence", "incapacitate" }
+ 
+
+also added a new set of CONSTANT in elk api to avoid issue with unit strings etc
+CDRNames, CDRLIST, Units (all units name used in el partyunits, raidunits
+March 1, 2022
+[4:20 PM]FmFlex: Last version will accept pushing a buff/debuff with the same id multiple time, before this was leading to some of the string to not work.
+August 15, 2022
+[8:13 PM]FmFlex: added 
+Classic_PlayerTalentPageCount(int page)
+ to count the point of point per talent page on classic.
+August 17, 2022
+[12:13 AM]FmFlex:
+public static int Classic_PlayerGlyphID(int glyphSlotID)
+public static bool Classic_PlayerHasGlyph(int glyphID)
+ (edited)
+[2:26 AM]FmFlex:
+public static bool PlayerIsAutoAttack
+ now work on tbc and woltk
+[12:55 PM]FmFlex: added 
+public static bool Classic_PlayerIsAutoAttackRange
+ to check if hunt and caster range autoattack is on/off
+October 9, 2022
+[1:47 PM]FmFlex:
+- Classic_PlayerEnergy to get the energy in classic regardless of the druid form.
+- Added AddItemWithoutMacro(string name, int ItemID) to add item only used for counting them but that can actually be used
+- added Classic_GloveEnchantAvail to track if glove enchant are usable or not
+October 14, 2022
+[2:45 PM]FmFlex:
+- Added an option to create macro with spell rank  ##spellid##
+January 19, 2023
+[11:14 AM]FmFlex:
+ - Added public static int PlayerTrinketID(int trinketIndex) 
