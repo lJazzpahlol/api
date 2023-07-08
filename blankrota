@@ -1,0 +1,27 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace HyperElk.Core
+{
+    public class Hunter : CombatRoutine
+    {
+        public override void Initialize()
+        {
+			CombatRoutine.isWOLTKRotation();
+            CombatRoutine.Name = "Hardcore Hunter";
+            CombatRoutine.isAutoBindReady = true;
+
+		
+		}
+		public override void CombatPulse()
+        {
+        }
+        public override void OutOfCombatPulse()
+        {
+		}
+		public override void Pulse()
+        {
+        }
+	}
+}
