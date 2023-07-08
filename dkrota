@@ -1,0 +1,139 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace HyperElk.Core
+{
+    public class DeathKnight : CombatRoutine
+    {
+        private string IcyTouch = "Icy Touch", PlagueStrike = "Plague Strike", BloodStrike = "Blood Strike", ScourgeStrike = "Scourge Strike",
+               BloodBoil = "Blood Boil", BloodTap = "Blood Tap", EmpowerRuneWeapon = "Empower Rune Weapon", Gargoyle = "Gargoyle",
+               ArmyOfTheDead = "Army of the Dead", DeathAndDecayMacro = "Death and Decay", DeathCoil = "Death Coil", GhoulFrenzy = "Ghoul Frenzy", 
+			   BloodPlague = "Blood Plague", Desolation = "Desolation", UnholyMight = "Unholy Might", FrostFever = "Frost Fever", 
+			   UnholyForce = "Unholy Force", DeathAndDecayMacroMacro = "Death and Decay Macro", HornOfWinter = "Horn of Winter", PetClaw = "Claw", PetClawMacro = "Claw",  SummonGargoyle = "Summon Gargoyle";
+
+        private DateTime lastUnholyMightProc = DateTime.MinValue;
+        private DateTime lastGhoulFrenzyProc = DateTime.MinValue; // added this definition
+		private DateTime lastBloodTapCast = DateTime.MinValue;
+		private DateTime lastScourgeStrikeProc = DateTime.MinValue;
+		private DateTime lastDeathAndDecayMacroCast = DateTime.MinValue;
+		
+		private bool unholyMightProc = false;
+		private bool scourgeStrikeProc = false;
+
+		
+		int openerStep = 0;
+
+		
+
+        public override void Initialize()
+        {
+            CombatRoutine.isWOLTKRotation();
+            CombatRoutine.Name = "Death Knight Test";
+            CombatRoutine.isAutoBindReady = true;
+			
+			AddMacro(DeathAndDecayMacroMacro, "D1", "None", "None", @"/cast [@player] Death and Decay");
+			// AddMacro(PetClawMacro, "D1", "None", "None", @"/cast [target=pettarget,harm,nodead,combat][combat] Claw");
+
+			// AddSpell(PetClaw, 47468); 
+            AddSpell(IcyTouch, 49909); 
+			AddSpell(PlagueStrike, 49921); 
+			AddSpell(BloodStrike, 49930);
+			AddSpell(ScourgeStrike, 55271); 
+			AddSpell(BloodBoil, 49941); 
+			AddSpell(BloodTap, 45529); 
+			AddSpell(EmpowerRuneWeapon, 47568); 
+			AddSpell(Gargoyle, 49206); 
+			AddSpell(ArmyOfTheDead, 42650);
+			AddSpell(DeathAndDecayMacro, 49938);
+			AddSpell(DeathCoil, 49895);
+			AddSpell(GhoulFrenzy, 63560);
+			AddSpell(HornOfWinter, 57623);
+			AddSpell(SummonGargoyle, 49206);
+
+			AddBuff(IcyTouch, 55095); 
+			AddBuff(BloodPlague, 55078);
+			AddBuff(EmpowerRuneWeapon, 47568);
+			AddBuff(Desolation, 66803);
+			AddBuff(UnholyMight, 67117);
+			AddBuff(BloodTap, 45529); 
+			AddBuff(UnholyForce, 67383); 
+			AddBuff(HornOfWinter, 57623);
+			AddBuff(GhoulFrenzy, 63560);
+
+			AddDebuff(FrostFever, 55095); 
+			AddDebuff(BloodPlague, 55078); 
+        }
+
+        public override void CombatPulse()
+        {
+	
+            // DPSRotation();
+        }
+
+		void DPSRotation() 
+		{
+			
+			
+			// Define the availability of each type of rune
+			bool hasBloodRune = (API.PlayerRuneCD(1) == 0 || API.PlayerRuneCD(2) == 0);
+			bool hasFrostRune = (API.PlayerRuneCD(3) == 0 || API.PlayerRuneCD(4) == 0);
+			bool hasUnholyRune = (API.PlayerRuneCD(5) == 0 || API.PlayerRuneCD(6) == 0);
+
+			// Define if there's a Death Rune available (we consider a Death Rune as any available rune)
+			bool hasDeathRune = (hasBloodRune || hasFrostRune || hasUnholyRune);
+
+			// IcyTouch
+			if (hasFrostRune && (!API.TargetHasDebuff(FrostFever) || API.TargetDebuffRemainingTime(FrostFever) < 3)) { API.CastSpell(IcyTouch); return; }
+
+			// PlagueStrike
+			if (hasUnholyRune && (!API.TargetHasDebuff(BloodPlague) || API.TargetDebuffRemainingTime(BloodPlague) < 3)) { API.CastSpell(PlagueStrike); return; }
+			
+			if (!API.PlayerIsInCombat) { ResetTimers(); return; }
+
+			// GhoulFrenzy
+			if (hasUnholyRune && API.CanCast(GhoulFrenzy) && !API.PetHasBuff(GhoulFrenzy) && DateTime.Now >= lastGhoulFrenzyProc.AddSeconds(20)) { API.CastSpell(GhoulFrenzy); lastGhoulFrenzyProc = DateTime.Now; return; }
+
+			// BloodStrike
+			if (hasBloodRune && (!API.PlayerHasBuff(Desolation) || API.PlayerBuffTimeRemaining(Desolation) < 3) && (!API.PlayerHasBuff(UnholyMight) && DateTime.Now >= lastUnholyMightProc.AddSeconds(46))) { API.CastSpell(BloodStrike); return; }
+			
+			// ScourgeStrike
+			if ((hasUnholyRune || hasDeathRune) && (hasFrostRune || hasDeathRune) && !API.PlayerHasBuff(UnholyForce) && DateTime.Now >= lastScourgeStrikeProc.AddSeconds(4)) { API.CastSpell(ScourgeStrike); lastScourgeStrikeProc = DateTime.Now; return; }
+			
+			// DeathAndDecayMacro
+			if (API.CanCast(DeathAndDecayMacro) && ((hasUnholyRune || hasDeathRune) && (hasBloodRune || hasDeathRune) && (hasFrostRune || hasDeathRune))) { API.CastSpell(DeathAndDecayMacroMacro); return; }
+			
+			// BloodTap - To ensure more Death and Decay casts, this should have higher priority than BloodBoil
+			if (hasBloodRune && API.CanCast(BloodTap) && DateTime.Now >= lastBloodTapCast.AddSeconds(50)) { API.CastSpell(BloodTap); lastBloodTapCast = DateTime.Now; return; }
+			
+			// BloodBoil
+			if (hasBloodRune && API.PlayerHasBuff(UnholyMight) && DateTime.Now >= lastUnholyMightProc.AddSeconds(46)) { API.CastSpell(BloodBoil); return; }
+			
+			// Horn of Winter
+			if (API.PlayerRunicPower < 70 && API.CanCast(HornOfWinter)) { API.CastSpell(HornOfWinter); return; }
+
+			// DeathCoil
+			if (API.PlayerRunicPower >= 40) { API.CastSpell(DeathCoil); return; }
+		}
+
+
+
+
+        void ResetTimers() 
+        {
+            lastUnholyMightProc = DateTime.MinValue; 
+            lastGhoulFrenzyProc = DateTime.MinValue; 
+			lastScourgeStrikeProc = DateTime.MinValue;
+			lastBloodTapCast = DateTime.MinValue;
+			lastDeathAndDecayMacroCast = DateTime.MinValue;
+        }
+
+        public override void OutOfCombatPulse()
+        {
+        }
+
+        public override void Pulse()
+        {
+        }
+    }
+}
