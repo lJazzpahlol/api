@@ -1,0 +1,645 @@
+using System.Linq;
+using System.Diagnostics;
+using System;
+using System.Collections.Generic;
+
+namespace HyperElk.Core
+{
+
+    public class ClassicDiscPVP : CombatRoutine
+    {
+
+        //Spell Strings
+	private string PoWF = "Power Word Fortitude";
+        private string PrayOF = "Prayer of Fortitude";
+        private string SFiend = "Shadowfiend";
+        private string IFire = "Inner Fire";
+        private string FHeal = "Flash Heal";
+        private string GHeal = "Greater Heal";
+        private string PWS = "Power Word: Shield";
+        private string PoM = "Prayer of Mending";
+        private string Ren = "Renew";
+        private string Weak = "Weakened Soul";
+	private string ShadPro = "Shadow Protection";
+	private string PoSP = "Prayer of Shadow Protection";
+	private string MCon = "Mind Control";
+	private string ManaBurn = "Mana Burn";
+	private string MDispel = "Mass Dispel";
+	private string DispelMagic = "Dispel Magic";
+	private string FearWard = "Fear Ward";
+	private string Wotf = "Will of the Forsaken";
+	private string Scream = "Psychic Scream";
+	private string SmiteGG = "Smite";
+	private string MBlast = "Mind Blast";
+	private string Pain = "Shadow Word: Pain";
+	private string Death = "Shadow Word: Death";
+	private string Supp = "Pain Suppression";
+	private string Infuse = "Power Infusion";
+	private string InnFocus = "Inner Focus";
+	private string DSpirit = "Divine Spirit";
+	private string PrayofSP = "Prayer of Spirit";
+    private string ToW = "Touch of Weakness";
+	private string FO = "Focus";
+	private string Bind = "Binding Heal";
+	private string EatingBuff = "Food Buff";
+    private string MageEatingBuff = "Mage Food Buff";
+	private string MO = "Mouseover";
+	private string MassDispel = "Mass Dispel";
+	
+	
+	
+	//private string NatSwift = "Nature's Swiftness";
+	private string EarthShe = "Earth Shield";
+	
+
+        private static readonly Stopwatch WandWatch = new Stopwatch();
+        private static readonly Stopwatch ManaWatch = new Stopwatch();
+	//	private static readonly Stopwatch DispelWatch = new Stopwatch();
+	//	private static readonly Stopwatch DispelWatch = new Stopwatch();
+		
+
+        private bool IsOOC => API.ToggleIsEnabled("OOC");
+		private bool IsDispSpam => API.ToggleIsEnabled("DispelSpam");
+		private bool InRange => API.TargetRange <= 40;
+		private bool IsAutoSwap => API.ToggleIsEnabled("Auto Target");
+		private bool IsBuffUp => API.ToggleIsEnabled("BuffMe");
+
+	//Strings
+	private static readonly Stopwatch SwapWatch = new Stopwatch();
+        private static readonly Stopwatch DPSWatch = new Stopwatch();
+       
+
+        private string[] units = { "player", "party1", "party2", "party3", "party4" };
+        public string[] AllUnitList = new string[] { "raid1", "raid2", "raid3", "raid4", "raid5", "raid6", "raid7", "raid8", "raid9", "raid8", "raid9", "raid10", "raid11", "raid12", "raid13", "raid14", "raid16", "raid17", "raid18", "raid19", "raid20", "raid21", "raid22", "raid23", "raid24", "raid25", "raid26", "raid27", "raid28", "raid29", "raid30", "raid31", "raid32", "raid33", "raid34", "raid35", "raid36", "raid37", "raid38", "raid39", "raid40", "player", "party1", "party2", "party3", "party4", "No Tank", };
+        static List<string> RaidList = new List<string>
+        {
+            "raid1", "raid2", "raid3", "raid4", "raid5", "raid6", "raid7", "raid8", "raid9", "raid8", "raid9", "raid10", "raid11", "raid12", "raid13", "raid14", "raid16", "raid17", "raid18", "raid19", "raid20", "raid21", "raid22", "raid23", "raid24", "raid25", "raid26", "raid27", "raid28", "raid29", "raid30", "raid31", "raid32", "raid33", "raid34", "raid35", "raid36", "raid37", "raid38", "raid39", "raid40",
+        };
+        static List<string> PartyList = new List<string>
+        {
+            "player", "party1", "party2", "party3", "party4","No Tank",
+        };
+        //List<string> AllUnitList = RaidList.Concat(PartyList).ToList();
+
+        int[] SwapSpeedList = new int[] { 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000 };
+        private int Level => API.PlayerLevel;
+        int PlayerHealth => API.TargetHealthPercent;
+		
+		
+		
+	//	string[] DispellList = { "Nature's Swiftness" };
+
+	
+
+		
+		private int FHealLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(FHeal)];
+        private int GHealLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(GHeal)];
+        private int PWSLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(PWS)];
+        private int PoMLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(PoM)];
+        private int RenLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(Ren)];
+        private int SuppLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(Supp)];
+        private int InfuseLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(Infuse)];
+        private int InnFocusLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(InnFocus)];
+		private int BindLifePercent => API.numbPercentListLong[CombatRoutine.GetPropertyInt(Bind)];
+		
+		
+		
+		
+		string[] DispellList = { "Power Word: Shield", 
+								 "Innervate", 
+								 "Power Infusion", 
+								 "Arcane Intellect", 
+								 "Power Word Fortitude", 
+								 "Prayer of Mending", 
+								 "Prayer of Fortitude", 
+								 "Shadow Protection", 
+								 "Prayer of Shadow Protection", 
+								 "Fear Ward",
+								 "Prayer of Spirit",
+								 "Renew",
+								 "Earth Shield",
+								 "Blessing of Sacrifice",
+								 "Blessing of Freedom", 
+								 "Avenging Wrath",
+								 "Blessing of Protection",
+								 "Blessing of Wisdom",
+								 "Greater Blessing of Might",
+								 "Blessing of Might",
+								 "Amplify Magic",
+								 "Arcane Brilliance",
+								 "Mana Shield",
+								 "Dampen Magic",
+								 "Fire Ward",
+								 "Frost Ward",
+								 "Bloodlust",
+								 "Heroism",
+								 "Water Shield",
+								 "Lightning Shield",
+								 "Shadow Ward",
+								 "Faerie Fire",
+								 "Gift of the Wild",
+								 "Mark of the Wild",
+								 "Thorns",
+								 "Regrowth",
+								 "Rejuvenation",
+								 "Nature's Swiftness"};
+		
+		//Bools and AoE Checks
+        private static bool TargetHasDispellAble(string debuff)
+        {
+            return API.TargetHasDebuff(debuff, false, true);
+        }
+        private static bool MouseoverHasDispellAble(string debuff)
+        {
+            return API.MouseoverHasDebuff(debuff, false, true);
+        }
+        private static bool UnitHasDispellAble(string debuff, string unit)
+        {
+            return API.UnitHasDebuff(debuff, unit, false, true);
+        }
+        private static bool UnitHasBuff(string buff, string unit)
+        {
+            return API.UnitHasBuff(buff, unit, true, true);
+        }
+        private static bool PlayerHasDebuff(string buff)
+        {
+            return API.PlayerHasDebuff(buff, false, false);
+        }
+        private static bool TargetHasBuff(string buff)
+        {
+            return API.TargetHasBuff(buff, true, true);
+        }
+        private static bool MouseoverHasBuff(string buff)
+        {
+            return API.MouseoverHasBuff(buff, true, false);
+        }
+        private static bool TargetHasDebuff(string buff)
+        {
+            return API.TargetHasDebuff(buff, false, true);
+        }
+        private static bool MouseoverHasDebuff(string buff)
+        {
+            return API.MouseoverHasDebuff(buff, false, false);
+        }
+        private static bool UnitHasDebuff(string buff, string unit)
+        {
+            return API.UnitHasDebuff(buff, unit, false, true);
+        }
+		
+		
+   
+
+
+	    
+	    
+	    //Spell Check Bools
+
+	    private bool GHealCheck => API.CanCast(GHeal) && InRange && API.TargetHealthPercent <= GHealLifePercent && API.TargetHealthPercent > 0 && !API.PlayerIsMoving && !API.PlayerCanAttackTarget;
+	    private bool FHealCheck => API.CanCast(FHeal) && InRange && API.TargetHealthPercent <= FHealLifePercent && API.TargetHealthPercent > 0 && !API.PlayerIsMoving && !API.PlayerCanAttackTarget;
+	    private bool PWSCheck => API.CanCast(PWS) && InRange && API.TargetHealthPercent <= PWSLifePercent && API.TargetHealthPercent > 0 && !API.PlayerIsMoving && !API.PlayerHasDebuff(Weak) && !API.PlayerCanAttackTarget;
+	    private bool PoMCheck => API.CanCast(PoM) && InRange && API.TargetHealthPercent <= PoMLifePercent && API.TargetHealthPercent > 0 && !API.PlayerIsMoving && !API.PlayerCanAttackTarget;
+	    private bool RenCheck => API.CanCast(Ren) && InRange && API.TargetHealthPercent <= RenLifePercent && API.TargetHealthPercent > 0 && !API.PlayerIsMoving && !API.PlayerHasBuff(Ren) && !API.PlayerCanAttackTarget;
+
+	    private bool SuppCheck => API.CanCast(Supp) && InRange && API.TargetHealthPercent <= SuppLifePercent && API.TargetHealthPercent > 0 && !API.PlayerIsMoving && !API.PlayerCanAttackTarget;
+	    private bool InfuseCheck => API.CanCast(Infuse) && InRange && API.TargetHealthPercent <= InfuseLifePercent && API.TargetHealthPercent > 0 && !API.PlayerIsMoving && !API.PlayerCanAttackTarget;
+	    private bool InnFocusCheck => API.CanCast(InnFocus) && API.TargetHealthPercent <= InnFocusLifePercent && API.TargetHealthPercent > 0 && !API.PlayerIsMoving && !API.PlayerCanAttackTarget;
+		
+		
+		private bool IsTargRange => API.TargetRange < 40;
+		private bool IsNotEating => (!API.PlayerHasBuff(MageEatingBuff) || !API.PlayerHasBuff(EatingBuff));
+		
+	
+		
+
+
+
+
+
+	    private void CastSpellOnFocus(string target, string spell)
+            {
+            API.CastSpell(target);
+            API.CastSpell(spell);
+            return;
+            }
+            public override void Initialize()
+            {
+
+			CombatRoutine.Name = "Classic TBC Disc PvP";
+            CombatRoutine.isTBCRotation();
+            isAutoBindReady = true;
+            isHealingRotationFocus = true;
+            API.WriteLog("Welcome to Disc PvP 1.0 by Lost");
+            API.WriteLog("Autobind is Supported.");
+
+	
+
+
+	    //Buff
+	    CombatRoutine.AddBuff(DSpirit, 25312);
+	    CombatRoutine.AddBuff(PrayofSP, 32999);
+	    CombatRoutine.AddBuff(Ren, 25222);
+	    CombatRoutine.AddBuff(ShadPro, 25433);
+	    CombatRoutine.AddBuff(InnFocus, 14751);
+	    CombatRoutine.AddBuff(PoWF, 25389);
+	    CombatRoutine.AddBuff(PoSP, 39374);
+	    CombatRoutine.AddBuff(PoM, 41635);
+	    CombatRoutine.AddBuff(PrayOF, 21564);
+        CombatRoutine.AddBuff(IFire, 25431);
+	    CombatRoutine.AddBuff(ToW, 25461);
+		
+		
+		//food
+		CombatRoutine.AddBuff(EatingBuff, 27089);
+        CombatRoutine.AddBuff(MageEatingBuff, 34062);
+	    
+	    //Debuff
+	    CombatRoutine.AddDebuff(Weak, 6788);
+	    CombatRoutine.AddDebuff(Pain, 25368);
+		
+		//Dispel Buff
+	   //CombatRoutine.AddDebuff(NatSwift, 16188);
+	   //CombatRoutine.AddBuff(NatSwift, 16188);
+	   
+	   //CombatRoutine.AddBuff(EarthShe, 32594);
+
+	    //Spell
+	    CombatRoutine.AddSpell(PWS, 25218, "D1");
+            CombatRoutine.AddSpell(Death, 32996, "D1");
+	    CombatRoutine.AddSpell(Ren, 25222, "D1");
+	    CombatRoutine.AddSpell(Wotf, 7744, "D1");
+	    CombatRoutine.AddSpell(Scream, 10890, "D1");
+            CombatRoutine.AddSpell(FearWard, 6346, "D1");
+			
+	    CombatRoutine.AddSpell(ShadPro, 25433, "D1");
+		
+	    CombatRoutine.AddSpell(SmiteGG, 25364, "D1");
+	    CombatRoutine.AddSpell(MBlast, 25375, "D1");
+	    CombatRoutine.AddSpell(DispelMagic, 988, "D1");
+	    CombatRoutine.AddSpell(Pain, 25368, "D1");
+	    CombatRoutine.AddSpell(Supp, 33206, "D1");
+            CombatRoutine.AddSpell(InnFocus, 14751, "D1");
+	    CombatRoutine.AddSpell(Infuse, 10060, "D1");
+		
+	    CombatRoutine.AddSpell(PoSP, 39374, "D1");
+		
+	    CombatRoutine.AddSpell(PoM, 33076, "D1");
+	    CombatRoutine.AddSpell(FHeal, 25235, "D1");
+            CombatRoutine.AddSpell(GHeal, 25213, "D1");
+	    CombatRoutine.AddSpell(MCon, 10912, "D1");
+            CombatRoutine.AddSpell(ManaBurn, 25380, "D1");
+	    CombatRoutine.AddSpell(MDispel, 32375, "D1");
+	    CombatRoutine.AddSpell(SFiend, 34433, "D1");
+	    CombatRoutine.AddSpell(ToW, 25461, "D1");
+		
+	    CombatRoutine.AddSpell(DSpirit, 25312, "D1");
+            CombatRoutine.AddSpell(PrayofSP, 32999, "D1");
+            CombatRoutine.AddSpell(PoWF, 25389, "D1");
+            CombatRoutine.AddSpell(PrayOF, 21564, "D1");
+			
+            CombatRoutine.AddSpell(IFire, 25431, "D1");
+		CombatRoutine.AddSpell(Bind, 32546, "D1");
+
+	    
+            //Toggle
+	    CombatRoutine.AddToggle("OOC");
+		CombatRoutine.AddToggle("DispelSpam");
+		CombatRoutine.AddToggle("Auto Target");
+		CombatRoutine.AddToggle("BuffMe");
+
+	    CombatRoutine.AddMacro("Stopcast", "F10", "None", "None", @"/stopcasting");
+
+	    //Focus
+		
+            CombatRoutine.AddMacro(GHeal + FO, "D1", "None", "None", @"/cast [@focus, help, nodead] #25213#");
+            CombatRoutine.AddMacro(FHeal + FO, "D1", "None", "None", @"/cast [@focus, help, nodead] #25235#");
+	    CombatRoutine.AddMacro(PWS + FO, "D1", "None", "None", @"/cast [@focus, help, nodead] #25218#");
+            CombatRoutine.AddMacro(PoM + FO, "D1", "None", "None", @"/cast [@focus, help, nodead] #33076#");
+	    CombatRoutine.AddMacro(Ren + FO, "D1", "None", "None", @"/cast [@focus, help, nodead] #25222#");
+		CombatRoutine.AddMacro(Bind + FO, "D1", "None", "None", @"/cast [@focus, help, nodead] #32546#");
+
+	    //Prop Healing
+	    CombatRoutine.AddProp(GHeal, GHeal + " Health Percent", API.numbPercentListLong, "Health percent at which" + GHeal + " is used, set to 0 to disable", "Healing", 10);
+            CombatRoutine.AddProp(FHeal, FHeal + " Health Percent", API.numbPercentListLong, "Health percent at which" + FHeal + " is used, set to 0 to disable", "Healing", 75);
+            CombatRoutine.AddProp(PWS, PWS + " Health Percent", API.numbPercentListLong, "Health percent at which" + PWS + " is used, set to 0 to disable", "Healing", 89);
+            CombatRoutine.AddProp(Ren, Ren + " Health Percent", API.numbPercentListLong, "Health percent at which" + Ren + " is used, set to 0 to disable", "Healing", 75);
+            CombatRoutine.AddProp(PoM, PoM + " Health Percent", API.numbPercentListLong, "Health percent at which" + PoM + " is used, set to 0 to disable", "Healing", 75);
+			CombatRoutine.AddProp(Bind, Bind + " Health Percent", API.numbPercentListLong, "Health percent at which" + Bind + " is used, set to 0 to disable", "Healing", 75);
+
+	    //Prop Cooldowns
+	    CombatRoutine.AddProp(Supp, Supp + " Health Percent", API.numbPercentListLong, "Health percent at which" + Supp + " is used, set to 0 to disable", "Healing", 20);
+            CombatRoutine.AddProp(InnFocus, InnFocus + " Health Percent", API.numbPercentListLong, "Health percent at which" + InnFocus + " is used, set to 0 to disable", "Healing", 20);
+            CombatRoutine.AddProp(Infuse, Infuse + " Health Percent", API.numbPercentListLong, "Health percent at which" + Infuse + " is used, set to 0 to disable", "Healing", 20);
+
+	    
+	   
+	}
+        public override void Pulse()
+        {
+		var UnitLowestSetup = API.UnitLowest(40).ToLower();
+        var UnitLowest = UnitLowestSetup == "none" ? "player" : UnitLowestSetup;
+            if (WandWatch.IsRunning && (API.PlayerIsMoving || API.PlayerIsCasting() || !API.PlayerIsInCombat || API.PlayerIsDead))
+            {
+                WandWatch.Reset();
+                return;
+            }
+			if (IsAutoSwap || IsOOC)
+                {
+                    if (API.UnitRange(UnitLowest) <= 40 && !API.PlayerIsMounted && IsNotEating)
+					{
+                		if (API.CanCast(PWS) && API.UnitHealthPercent(UnitLowest) <= PWSLifePercent && API.UnitHealthPercent(UnitLowest) > 0 && API.UnitIsIncombat(UnitLowest) && !API.UnitHasDebuff(Weak, UnitLowest))
+                        {
+                            CastSpellOnFocus(UnitLowest, PWS + FO);
+                            return;
+                        }
+						
+						if (API.CanCast(PoM) && API.UnitHealthPercent(UnitLowest) <= PoMLifePercent && API.UnitHealthPercent(UnitLowest) > 0 && API.UnitIsIncombat(UnitLowest) && !API.UnitHasBuff(PoM, UnitLowest))
+                        {
+                            CastSpellOnFocus(UnitLowest, PoM + FO);
+                            return;
+                        }
+						if (API.CanCast(Bind) && API.UnitHealthPercent(UnitLowest) <= BindLifePercent && API.PlayerHealthPercent < BindLifePercent && API.UnitHealthPercent(UnitLowest) > 0 && API.UnitIsIncombat(UnitLowest))
+                        {
+                            CastSpellOnFocus(UnitLowest, Bind + FO);
+                            return;
+                        }
+						
+						if (API.CanCast(GHeal) && API.UnitHealthPercent(UnitLowest) <= GHealLifePercent && API.UnitHealthPercent(UnitLowest) > 0 && API.UnitIsIncombat(UnitLowest) && !API.UnitHasBuff(PWS, UnitLowest))
+                        {
+                            CastSpellOnFocus(UnitLowest, GHeal + FO);
+                            return;
+                        }
+						if (API.CanCast(FHeal) && API.UnitHealthPercent(UnitLowest) <= FHealLifePercent && API.UnitHealthPercent(UnitLowest) > 0 && API.UnitIsIncombat(UnitLowest))
+                        {
+                            CastSpellOnFocus(UnitLowest, FHeal + FO);
+                            return;
+                        }
+						if (API.CanCast(Ren) && API.UnitHealthPercent(UnitLowest) <= RenLifePercent && API.UnitHealthPercent(UnitLowest) > 0 && API.UnitIsIncombat(UnitLowest) && !API.UnitHasBuff(Ren, UnitLowest))
+                        {
+                            CastSpellOnFocus(UnitLowest, Ren + FO);
+                            return;
+                        }
+						if (API.CanCast(Pain) && API.TargetDebuffRemainingTime(Pain) <= 200 && API.PlayerIsInCombat)
+						{
+                        API.CastSpell(Pain);
+                        return;
+						}
+						if (API.CanCast(MBlast) && API.PlayerIsInCombat)
+						{
+                        API.CastSpell(MBlast);
+                        return;
+						}
+						if (API.CanCast(SmiteGG) && API.PlayerIsInCombat)
+						{
+                        API.CastSpell(SmiteGG);
+                        return;
+						}
+						
+                        
+						
+						
+                        
+                            }
+                        }
+						
+						
+						
+						if (!API.PlayerIsMounted && IsDispSpam && IsTargRange && IsNotEating && (IsOOC || API.PlayerIsInCombat))
+            {
+                #region Dispell
+                         
+                              if (API.CanCast(DispelMagic))
+                              {
+                                  
+                                      if (!API.TargetHasBuff(EarthShe, true, true))
+                 {
+                     API.CastSpell(DispelMagic);
+                     return;
+                 }
+                 }
+                 }
+                 
+                       
+                   #endregion
+						
+						 if (API.PlayerIsInCombat || IsOOC && !API.PlayerIsMounted && IsNotEating)
+            {
+                if (!API.PlayerIsCasting())
+                {
+		    
+				    if (API.CanCast(InnFocus) && API.PlayerHealthPercent < InnFocusLifePercent)
+                    {
+                        API.CastSpell(InnFocus);
+                        return;
+                    }
+                    if (API.CanCast(Infuse) && API.PlayerHealthPercent < InfuseLifePercent)
+                    {
+                        API.CastSpell(Infuse);
+                        return;
+                    }
+                    if (API.CanCast(Supp) && API.PlayerHealthPercent < SuppLifePercent)
+                    {
+                        API.CastSpell(Supp);
+                        return;
+                    }
+                }
+				
+				 if (!ManaWatch.IsRunning && !API.PlayerIsMounted && IsNotEating)
+                {
+				if (API.CanCast(IFire) && API.PlayerBuffStacks(IFire) <= 1)
+                {
+                    API.CastSpell(IFire);
+                    return;
+                }
+                
+		    
+		}
+           
+
+
+                if (!ManaWatch.IsRunning && IsBuffUp && !API.PlayerIsMounted && IsNotEating)
+                {
+
+                    if (API.CanCast(PoWF) && !API.PlayerHasBuff(PoWF) && !API.PlayerHasBuff(PrayOF))
+                    {
+                        API.CastSpell(PoWF);
+                        return;
+                    }
+                    if (API.CanCast(IFire) && API.PlayerBuffStacks(IFire) <= 1)
+                    {
+                        API.CastSpell(IFire);
+                        return;
+                    }
+                    if (API.CanCast(ShadPro) && !API.PlayerHasBuff(ShadPro) && !API.PlayerHasBuff(PoSP))
+                    {
+                        API.CastSpell(ShadPro);
+                        return;
+                    }
+		    if (API.CanCast(DSpirit) && !API.PlayerHasBuff(DSpirit) && !API.PlayerHasBuff(PrayofSP))
+                    {
+                        API.CastSpell(DSpirit);
+                        return;
+                    }
+		    
+		   
+
+                }
+				if (!ManaWatch.IsRunning && !API.PlayerIsMounted && IsNotEating)
+                {
+				if (API.CanCast(IFire) && API.PlayerBuffStacks(IFire) <= 1)
+                {
+                    API.CastSpell(IFire);
+                    return;
+                }
+                
+		    
+		}
+
+
+                if (!ManaWatch.IsRunning && IsBuffUp && !API.PlayerIsMounted && IsNotEating)
+                {
+
+                    if (API.CanCast(PoWF) && !API.PlayerHasBuff(PoWF) && !API.PlayerHasBuff(PrayOF))
+                    {
+                        API.CastSpell(PoWF);
+                        return;
+                    }
+                    if (API.CanCast(IFire) && API.PlayerBuffStacks(IFire) <= 1)
+                    {
+                        API.CastSpell(IFire);
+                        return;
+                    }
+                    if (API.CanCast(ShadPro) && !API.PlayerHasBuff(ShadPro) && !API.PlayerHasBuff(PoSP))
+                    {
+                        API.CastSpell(ShadPro);
+                        return;
+                    }
+		    if (API.CanCast(DSpirit) && !API.PlayerHasBuff(DSpirit) && !API.PlayerHasBuff(PrayofSP))
+                    {
+                        API.CastSpell(DSpirit);
+                        return;
+                    }
+		    
+		    
+		}
+            }
+        }
+        public override void CombatPulse()
+        {
+            if (!API.PlayerIsCasting() && !API.PlayerIsMounted && IsNotEating)
+            {
+
+                if (API.CanCast(PWS) && API.PlayerHealthPercent < PWSLifePercent && !API.PlayerHasDebuff(Weak))
+                {
+                    API.CastSpell(PWS);
+                    return;
+                }
+		if (API.CanCast(PoM) && API.PlayerHealthPercent < PoMLifePercent)
+                {
+                    API.CastSpell(PoM);
+                    return;
+                }
+		if (API.CanCast(Ren) && API.PlayerHealthPercent < RenLifePercent && !API.PlayerHasBuff(Ren))
+                {
+                    API.CastSpell(Ren);
+                    return;
+                }
+		if (API.CanCast(FHeal) && API.PlayerHealthPercent < FHealLifePercent)
+                {
+                    API.CastSpell(FHeal);
+                    return;
+                }
+                if (API.CanCast(GHeal) && API.PlayerHealthPercent < GHealLifePercent)
+                {
+                    API.CastSpell(GHeal);
+                    return;
+                }
+                
+            }
+			
+			if (!ManaWatch.IsRunning && !API.PlayerIsMounted && IsNotEating)
+                {
+				if (API.CanCast(IFire) && API.PlayerBuffStacks(IFire) <= 1)
+                {
+                    API.CastSpell(IFire);
+                    return;
+                }
+                
+		    
+		}
+
+
+
+            if (!ManaWatch.IsRunning && IsBuffUp && !API.PlayerIsMounted && IsNotEating)
+            {
+
+                if (API.CanCast(PoWF) && !API.PlayerHasBuff(PoWF) && !API.PlayerHasBuff(PrayOF))
+                {
+                    API.CastSpell(PoWF);
+                    return;
+                }
+                if (API.CanCast(IFire) && API.PlayerBuffStacks(IFire) <= 1)
+                {
+                    API.CastSpell(IFire);
+                    return;
+                }
+		if (API.CanCast(ShadPro) && !API.PlayerHasBuff(ShadPro) && !API.PlayerHasBuff(PoSP))
+                    {
+                        API.CastSpell(ShadPro);
+                        return;
+                    }
+		if (API.CanCast(DSpirit) && !API.PlayerHasBuff(DSpirit) && !API.PlayerHasBuff(PrayofSP))
+                    {
+                        API.CastSpell(DSpirit);
+                        return;
+                    }
+		   
+
+            }
+			
+			if (!ManaWatch.IsRunning && !API.PlayerIsMounted && IsNotEating)
+                {
+				if (API.CanCast(IFire) && API.PlayerBuffStacks(IFire) <= 1)
+                {
+                    API.CastSpell(IFire);
+                    return;
+                }
+                
+		    
+		}
+
+
+            if (!ManaWatch.IsRunning && IsBuffUp && !API.PlayerIsMounted && IsNotEating)
+            {
+
+                if (API.CanCast(PoWF) && !API.PlayerHasBuff(PoWF) && !API.PlayerHasBuff(PrayOF))
+                {
+                    API.CastSpell(PoWF);
+                    return;
+                }
+                if (API.CanCast(IFire) && API.PlayerBuffStacks(IFire) <= 1)
+                {
+                    API.CastSpell(IFire);
+                    return;
+                }
+                if (API.CanCast(ShadPro) && !API.PlayerHasBuff(ShadPro) && !API.PlayerHasBuff(PoSP))
+                    {
+                        API.CastSpell(ShadPro);
+                        return;
+                    }
+		if (API.CanCast(DSpirit) && !API.PlayerHasBuff(DSpirit) && !API.PlayerHasBuff(PrayofSP))
+                    {
+                        API.CastSpell(DSpirit);
+                        return;
+                    }
+		    
+		}
+        }
+
+
+        public override void OutOfCombatPulse()
+        {
+
+        }
+    }
+}
+
