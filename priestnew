@@ -1,0 +1,234 @@
+using System.Linq;
+using System.Diagnostics;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using AimsharpWow.API; //needed to access Aimsharp API
+
+namespace AimsharpWow.Modules
+{
+    public class ClassicHardcorePriest : Rotation
+    {
+//spellnames
+List<string> SpellsList = new List<string>
+{
+"Smite","Shadow Word: Pain", "Power Word: Fortitude", "Power Word: Shield", "Mind Blast", "Touch of Weakness", "Inner Fire", "Renew", "Holy Fire", "Flash Heal"
+};
+List<string> BuffsList = new List<string>
+{
+"Power Word: Fortitude", "Power Word: Shield", "Touch of Weakness", "Inner Fire", "Renew"
+};
+List<string> DebuffsList = new List<string>
+{
+"Shadow Word: Pain", "Weakened Soul"
+};
+
+public override void LoadSettings()
+{
+Settings.Add(new Setting("Game Client Language", new List<string>()
+{
+"English"
+}, "English"));
+Settings.Add(new Setting("General Settings"));
+
+}
+
+private Stopwatch wandTimer = new Stopwatch();
+
+
+
+public override void Initialize()
+{
+Aimsharp.PrintMessage("Hardcore Classic Priest", Color.Yellow);
+            Aimsharp.PrintMessage("Version 1.1 (WoW HC Classic)", Color.Yellow);
+
+Macros.Add("TopTrinket", "/use 13");
+            Macros.Add("BottomTrinket", "/use 14");
+Macros.Add("Wanding", "/castsequence [exists][nodead] !Shoot, !Shoot");
+Macros.Add("SWPMO", "/cast [@mouseover, exists, nodead] Shadow Word: Pain");
+Macros.Add("Stopcast", "/stopcasting");
+Macros.Add("Stopattack", "/stopattack");
+// Macros.Add("Wanding", "/cast [exists][nodead]!Shoot");
+
+Aimsharp.Latency = 100;
+Aimsharp.QuickDelay = 150;
+Aimsharp.SlowDelay = 350;
+
+foreach (string Spell in SpellsList)
+{
+Spellbook.Add(Spell);
+}
+foreach (string Buff in BuffsList)
+{
+Buffs.Add(Buff);
+}
+foreach (string Debuff in DebuffsList)
+{
+Debuffs.Add(Debuff);
+}
+
+}
+
+
+
+
+
+public override bool CombatTick()
+{
+{ CombatLogic(); }
+
+private bool CanCastAndAttack(string spell, string target, bool isBeneficial = false, bool isHarmful = false)
+{
+bool canCast = Aimsharp.CanCast(spell, target, isBeneficial, isHarmful);
+if (canCast)
+{
+Aimsharp.Cast(spell);
+Aimsharp.Cast("Stopattack");
+}
+return canCast;
+}
+
+private bool isSpellCasting = false;
+
+public bool CombatLogic()
+{
+bool Fighting = Aimsharp.Range("target") <= 30 && Aimsharp.TargetIsEnemy();
+bool Moving = Aimsharp.PlayerIsMoving();
+int currentManaPercentage = Aimsharp.Mana();
+int SWPRemaining = Aimsharp.DebuffRemaining("Shadow Word: Pain", "target");
+bool HasInnFire = Aimsharp.HasBuff("Inner Fire", "player");
+bool HasRenew = Aimsharp.HasBuff("Renew", "player");
+
+if (Fighting && Aimsharp.Health("player") < 99 && CanCastAndAttack("Power Word: Shield", "player") && ShouldCastPowerWordShield())
+return SetCastingFlagAndCast("Power Word: Shield");
+
+if (Aimsharp.Health("player") < 40 && CanCastAndAttack("Flash Heal", "player"))
+return SetCastingFlagAndCast("Flash Heal");
+
+if (!HasInnFire && CanCastAndAttack("Inner Fire", "player"))
+return SetCastingFlagAndCast("Inner Fire");
+
+if (Aimsharp.Health("player") < 70 && currentManaPercentage > 20 && !HasRenew && CanCastAndAttack("Renew", "player"))
+return SetCastingFlagAndCast("Renew");
+
+if (!Moving && Fighting && currentManaPercentage > 75 && CanCastAndAttack("Mind Blast", "target", false, true))
+return SetCastingFlagAndCast("Mind Blast", "Attempting to cast Mind Blast!", Color.Orange);
+
+if (Fighting && SWPRemaining < 50 && currentManaPercentage > 65 && Aimsharp.Range("target") > 40 && CanCastAndAttack("Shadow Word: Pain", "target", false, true))
+return SetCastingFlagAndCast("Shadow Word: Pain", "Attempting to cast Pain!", Color.Purple);
+
+if (AttemptWanding())
+return true;
+
+return false;
+}
+
+private bool SetCastingFlagAndCast(string spell, string message = "", Color? color = null)
+{
+isSpellCasting = true;
+
+if (!string.IsNullOrEmpty(message))
+Aimsharp.PrintMessage(message, color.GetValueOrDefault(Color.White));
+
+Aimsharp.Cast(spell);
+isSpellCasting = false;
+
+return true;
+}
+
+private bool AttemptWanding()
+{
+if (isSpellCasting)
+return false;
+
+bool Fighting = Aimsharp.Range("target") <= 30 && Aimsharp.TargetIsEnemy();
+bool Moving = Aimsharp.PlayerIsMoving();
+
+if (!Moving && Fighting && (!wandTimer.IsRunning || wandTimer.ElapsedMilliseconds >= 800))
+{
+Aimsharp.PrintMessage("Wanding!", Color.Blue);
+Aimsharp.Cast("Wanding");
+
+if (!wandTimer.IsRunning)
+wandTimer.Start();
+else
+wandTimer.Restart();
+
+return true;
+}
+return false;
+}
+
+
+private bool ShouldCastPowerWordShield()
+{
+// Check if player doesn't have Power Word: Shield buff and also doesn't have Weakened Soul debuff
+if (!Aimsharp.HasBuff("Power Word: Shield", "player") && !Aimsharp.HasDebuff("Weakened Soul", "player"))
+{
+return true;
+}
+return false;
+}
+
+
+
+public override bool OutOfCombatTick()
+{
+
+{ OOCombatLogic(); }
+
+public bool OOCombatLogic()
+{
+bool Fighting = Aimsharp.Range("target") <= 30 && Aimsharp.TargetIsEnemy();
+bool Moving = Aimsharp.PlayerIsMoving();
+
+if (Fighting && !Moving)
+{
+if (Aimsharp.CanCast("Holy Fire", "target", true, true))
+{
+Aimsharp.PrintMessage("Attempting to cast Holy Fire!", Color.Purple);
+Aimsharp.Cast("Holy Fire");
+return true;
+}
+if (Aimsharp.CanCast("Mind Blast", "target", true, true))
+{
+Aimsharp.PrintMessage("Attempting to cast Mind Blast!", Color.Purple);
+Aimsharp.Cast("Mind Blast");
+return true;
+}
+if (Aimsharp.CanCast("Shadow Word: Pain", "target", true, true) && Aimsharp.DebuffRemaining("Shadow Word: Pain", "target") < 50 && Aimsharp.HasBuff("Power Word: Shield", "player"))
+{
+Aimsharp.PrintMessage("Attempting to cast Pain!", Color.Purple);
+Aimsharp.Cast("Shadow Word: Pain");
+return true;
+}
+}
+
+if (Aimsharp.CanCast("Power Word: Fortitude", "player") && !Aimsharp.HasBuff("Power Word: Fortitude", "player"))
+{
+Aimsharp.Cast("Power Word: Fortitude");
+return true;
+}
+if (Aimsharp.CanCast("Power Word: Shield", "player") && !Aimsharp.HasDebuff("Weakened Soul", "player") && Aimsharp.Health("target") > 0)
+{
+Aimsharp.Cast("Power Word: Shield");
+return true;
+}
+if (Aimsharp.CanCast("Inner Fire", "player") && !Aimsharp.HasBuff("Inner Fire", "player"))
+{
+Aimsharp.Cast("Inner Fire");
+return true;
+}
+if (Aimsharp.CanCast("Touch of Weakness", "player") && !Aimsharp.HasBuff("Touch of Weakness", "player"))
+{
+Aimsharp.Cast("Touch of Weakness");
+return true;
+}
+
+return false;
+}
+}
+
+
+}
+}
