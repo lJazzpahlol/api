@@ -1,0 +1,379 @@
+using System.Linq;
+using System.Diagnostics;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using AimsharpWow.API; //needed to access Aimsharp API
+
+namespace AimsharpWow.Modules
+{
+    public class ClassicHardcorePriest : Rotation
+    {
+		//spellnames
+		 List<string> SpellsList = new List<string>
+        {
+            "Smite","Shadow Word: Pain", "Power Word: Fortitude", "Power Word: Shield", "Mind Blast", "Touch of Weakness", "Inner Fire", 
+			"Renew", "Holy Fire", "Flash Heal", "Stopcast", "Shackle Undead", "ShackleMO", "Shadow Protection", "Dispel Magic", 
+			"Abolish Disease", "Cure Disease"
+        };
+		 List<string> BuffsList = new List<string>
+        {
+			"Power Word: Fortitude", "Power Word: Shield", "Touch of Weakness", "Inner Fire", "Renew", "Shadow Protection", "Abolish Disease", "Spirit Tap"
+        };
+		List<string> DebuffsList = new List<string>
+        {
+			"Shadow Word: Pain", "Weakened Soul", "Shackle Undead"
+        };
+		
+		public override void LoadSettings()
+        {
+            Settings.Add(new Setting("Game Client Language", new List<string>()
+			{
+			"English"
+			}, "English"));
+			Settings.Add(new Setting("General Settings"));
+			// Settings.Add(new Setting("Mana Minimum %"));
+			
+			Settings.Add(new Setting("Flash Heal Mana %", 1, 100, 15));
+			Settings.Add(new Setting("Renew Mana %", 1, 100, 20));
+			
+			// Settings.Add(new Setting("Dont Use These Below % Mana"));
+			
+			Settings.Add(new Setting("Mind Blast Mana %", 1, 100, 50)); // Initialized to 50 as an example
+			Settings.Add(new Setting("Smite Mana %", 1, 100, 75));
+			Settings.Add(new Setting("Shadow Word: Pain Mana %", 1, 100, 55));
+			
+			// Settings.Add(new Setting("Healing Player Health %"));
+			
+			 // Health Sliders for Casting Specific Spells
+			Settings.Add(new Setting("Shield Health %", 0, 100, 99)); // Use default threshold of 99% as in your original logic
+			Settings.Add(new Setting("Flash Heal Health %", 0, 100, 40)); // Use default threshold of 40% as in your original logic
+			Settings.Add(new Setting("Renew Health %", 0, 100, 65)); // Use default threshold of 65% as in your original logic
+			
+			// Settings.Add(new Setting("Enable/Disable Spells"));
+			// Skills Checkboxes
+			Settings.Add(new Setting("Use Power Word: Shield", true));
+			Settings.Add(new Setting("Use Smite", true));
+			Settings.Add(new Setting("Use Flash Heal", true));
+			Settings.Add(new Setting("Use Inner Fire", true));
+			Settings.Add(new Setting("Use Renew", true));
+			Settings.Add(new Setting("Use Mind Blast", true));
+			Settings.Add(new Setting("Use Shadow Word: Pain", true));
+			
+			// Settings.Add(new Setting("Wand Management"));
+			// Wand Function Settings
+			// Settings.Add(new Setting("Wand Player Health %", 0, 100, 100)); // Default to 100% or whatever value you think best
+			Settings.Add(new Setting("Wand Player Mana %", 0, 100, 75)); // Default to 75% based on the current logic you provided
+			Settings.Add(new Setting("Wand Target Health %", 0, 100, 25)); // Default to 25% based on the current logic
+			Settings.Add(new Setting("Pre Mind Blast Stop Wand Duration (ms)", 0, 3000, 1500)); // Default to 1500ms
+			Settings.Add(new Setting("Wand Lockout After Mind Blast Duration (ms)", 0, 500, 50)); // Default to 50ms
+			
+        }
+		
+		private Stopwatch wandTimer = new Stopwatch();
+		
+			
+		
+		public override void Initialize()
+        {
+			Aimsharp.PrintMessage("Hardcore Classic Priest", Color.Yellow);
+            Aimsharp.PrintMessage("Version 1.1 (WoW HC Classic)", Color.Yellow);
+
+			// Macros.Add("TopTrinket", "/use 13");
+            // Macros.Add("BottomTrinket", "/use 14");
+			Macros.Add("Wanding", "/cast [exists][nodead]!Shoot");
+			// Macros.Add("SWPMO", "/cast [@mouseover, exists, nodead] Shadow Word: Pain");
+			Macros.Add("Stopcast", "/stopcasting");
+			// Macros.Add("Stopattack", "/stopattack");
+			/* Macros.Add("Wanding", "/cast [exists][nodead]!Shoot"); */
+			Macros.Add("ShackleMO", "/cast [@mouseover] Shackle Undead");
+			Macros.Add("DispelMagicMe", "/cast [@player] Dispel Magic");
+			Macros.Add("CureMe", "/cast [@player] Cure Disease");
+			Macros.Add("AbolishMe", "/cast [@player] Abolish Disease");
+			
+			// int isWanding = Aimsharp.LuaDoString<int>("isAutoRepeat = \"\";  isAutoRepeat = 0; local name = GetSpellInfo(5019); if IsAutoRepeatSpell(name) then isAutoRepeat = 1 end", "isAutoRepeat");
+			CustomFunctions.Add("IsWanding", "local name = GetSpellInfo(5019); if IsAutoRepeatSpell(name) then return 1 else return 0 end");
+			CustomFunctions.Add("IsMouseoverUndead", "if UnitCreatureType('mouseover') == 'Undead' then return 1; else return 0; end");
+			CustomFunctions.Add("HasMagicDebuff", @"
+								local hasMagicDebuff = 0;
+								for i=1, 40 do 
+									local _, _, _, debuffType = UnitDebuff('player', i); 
+									if debuffType == 'Magic' then 
+										hasMagicDebuff = 1; 
+										break; 
+									end 
+								end 
+								return hasMagicDebuff");
+
+			CustomFunctions.Add("HasDiseaseDebuff", @"
+								local hasDiseaseDebuff = 0;
+								for i=1, 40 do 
+									local _, _, _, debuffType = UnitDebuff('player', i); 
+									if debuffType == 'Disease' then 
+										hasDiseaseDebuff = 1; 
+										break; 
+									end 
+								end 
+								return hasDiseaseDebuff");
+
+
+
+
+			HasMagicDebuff = Aimsharp.CustomFunction("HasMagicDebuff");
+			HasDiseaseDebuff = Aimsharp.CustomFunction("HasDiseaseDebuff");
+
+			
+			Aimsharp.Latency = 100;
+            Aimsharp.QuickDelay = 150;
+            Aimsharp.SlowDelay = 350;
+			
+			foreach (string Spell in SpellsList)
+            {
+                Spellbook.Add(Spell);
+            }
+			foreach (string Buff in BuffsList)
+            {
+                Buffs.Add(Buff);
+            }
+			foreach (string Debuff in DebuffsList)
+            {
+                Debuffs.Add(Debuff);
+            }
+			
+		}
+		
+		
+		
+		
+		
+		public override bool CombatTick()
+		{
+			
+			int Time = Aimsharp.CombatTime();
+			bool Fighting = Aimsharp.Range("target") <= 30 && Aimsharp.TargetIsEnemy();
+			float Haste = Aimsharp.Haste() / 100f;
+			int TargetHealthPct = Aimsharp.Health("target");
+			bool Moving = Aimsharp.PlayerIsMoving();
+			int SWPRemaining = Aimsharp.DebuffRemaining("Shadow Word: Pain", "target");
+			int currentManaPercentage = Aimsharp.Mana();
+			bool HasInnFire = Aimsharp.HasBuff("Inner Fire", "player");
+			bool HasRenew = Aimsharp.HasBuff("Renew", "player");
+
+			int playerHealth = Aimsharp.Health("player");
+
+			if (Fighting && playerHealth < GetSlider("Shield Health %") && Aimsharp.CanCast("Power Word: Shield", "player") && ShouldCastPowerWordShield()) {
+				Aimsharp.Cast("Power Word: Shield");
+				return true;
+			}
+			if (ShackleUndead() || TryDispelMagic() || TryCureDisease())
+				return true;
+			if (playerHealth < GetSlider("Flash Heal Health %") && currentManaPercentage > 15 && Aimsharp.CanCast("Flash Heal", "player")) {
+				Aimsharp.Cast("Flash Heal");
+				return true;
+			}
+			if (!HasInnFire && Aimsharp.CanCast("Inner Fire", "player")) {
+				Aimsharp.Cast("Inner Fire");
+				return true;
+			}
+			if (!HasRenew && playerHealth < GetSlider("Renew Health %") && Aimsharp.CanCast("Renew", "player") && (Aimsharp.HasDebuff("Weakened Soul", "player") ? playerHealth < 85 : playerHealth < 65) && currentManaPercentage > 20) {
+				Aimsharp.Cast("Renew");
+				return true;
+			}
+			if (!Moving && Fighting && TargetHealthPct > 25 && currentManaPercentage >= GetSlider("Mind Blast Mana %") && Aimsharp.CanCast("Mind Blast", "target", true, true)) {
+				Aimsharp.Cast("Mind Blast");
+				return true;
+			}
+			if (!Moving && Fighting && TargetHealthPct > 25 && currentManaPercentage >= GetSlider("Smite Mana %") && Aimsharp.CanCast("Smite", "target", true, true)) {
+				Aimsharp.Cast("Smite");
+				return true;
+			}
+			if (Fighting && TargetHealthPct > 40 && SWPRemaining < 50 && (Moving || currentManaPercentage > 75) && currentManaPercentage >= GetSlider("Shadow Word: Pain Mana %") && Aimsharp.CanCast("Shadow Word: Pain", "target", true, true)) {
+				Aimsharp.Cast("Shadow Word: Pain");
+				return true;
+			}
+			if (AttemptWanding())
+				return true;
+
+			return false;
+
+
+		}
+		
+			public int HasMagicDebuff;
+			public int HasDiseaseDebuff;
+			
+
+			private bool TryDispelMagic()
+			{
+				int currentManaPercentage = Aimsharp.Mana();
+				bool Moving = Aimsharp.PlayerIsMoving();
+				HasMagicDebuff = Aimsharp.CustomFunction("HasMagicDebuff");
+				if(HasMagicDebuff == 1 && Moving && currentManaPercentage > 30)
+				{
+					Aimsharp.Cast("DispelMagicMe");
+					Aimsharp.PrintMessage("Dispelling Magic", Color.Blue);
+					return true;
+				}
+				return false;
+			}
+
+			private bool TryCureDisease()
+			{
+				int currentManaPercentage = Aimsharp.Mana();
+				bool Moving = Aimsharp.PlayerIsMoving();
+				bool HasAbolishBuff = Aimsharp.HasBuff("Abolish Disease", "player");
+				HasDiseaseDebuff = Aimsharp.CustomFunction("HasDiseaseDebuff");
+				if(HasDiseaseDebuff == 1 && currentManaPercentage > 30 && !HasAbolishBuff)
+				{
+					Aimsharp.Cast("AbolishMe");
+					Aimsharp.PrintMessage("Abolishing Disease", Color.Green);
+					return true;
+				}
+				return false;
+			}
+
+			public int IsMouseoverUndead;
+		
+			private bool ShackleUndead()
+			{
+				IsMouseoverUndead = Aimsharp.CustomFunction("IsMouseoverUndead");
+				if (Aimsharp.CanCast("Shackle Undead", "mouseover") && IsMouseoverUndead == 1 && Aimsharp.LastCast() != "Shackle Undead")
+				{
+					Aimsharp.Cast("ShackleMO");
+					Aimsharp.PrintMessage("Shackling Undead!", Color.Purple);
+					return true;
+				}
+
+				return false;
+			}
+
+			private DateTime lastMindBlastCastTime = DateTime.MinValue;
+			private const int PreMindBlastStopWandDurationMs = 1500;  // 1.7 seconds before Mind Blast
+			private const int WandLockoutAfterMindBlastDurationMs = 50;  // 0.1 seconds after Mind Blast
+			private const int MindBlastSpellID = 8104;
+			private const int SmiteSpellID = 1004;  // Placeholder, please replace with the actual Smite Spell ID
+
+			private bool AttemptWanding()
+			{
+				int isWanding = Aimsharp.CustomFunction("IsWanding");
+				int MindBlastCooldown = Aimsharp.SpellCooldown("Mind Blast");
+				float playerManaPercent = Aimsharp.Mana();
+				float targetHealthPercent = Aimsharp.Health("target");
+				int playerCastingID = Aimsharp.CastingID("player");
+				
+				bool stopWandingConditions = 
+				(MindBlastCooldown <= GetSlider("Pre Mind Blast Stop Wand Duration (ms)") && targetHealthPercent > GetSlider("Wand Target Health %") && playerManaPercent > GetSlider("Wand Player Mana %")) ||
+				((Aimsharp.BuffRemaining("Power Word: Shield") > 0 && Aimsharp.BuffRemaining("Power Word: Shield") <= GetSlider("Pre Shield Stop Wand Duration (ms)")) || (Aimsharp.CanCast("Power Word: Shield", "player") && ShouldCastPowerWordShield()));
+						
+				if (playerCastingID == MindBlastSpellID || playerCastingID == SmiteSpellID)
+				{
+					lastMindBlastCastTime = DateTime.UtcNow;
+					Aimsharp.PrintMessage(playerCastingID == MindBlastSpellID ? "Casting Mind Blast" : "Casting Smite", Color.Blue);
+					return false;
+				}
+
+				if(DateTime.UtcNow < lastMindBlastCastTime.AddMilliseconds(GetSlider("Wand Lockout After Mind Blast Duration (ms)")))
+				{
+					Aimsharp.PrintMessage("Within spell lockout period", Color.Yellow);
+					return false;
+				}
+
+				if (stopWandingConditions && isWanding == 1)
+				{
+					Aimsharp.Cast("Stopcast");
+					Aimsharp.PrintMessage("Stopping Wand due to spell or Shield conditions", Color.Red);
+					return false;
+				}
+				else if (!stopWandingConditions && isWanding == 0 && (playerManaPercent < GetSlider("Wand Player Mana %") || targetHealthPercent <= GetSlider("Wand Target Health %")))
+				{
+					Aimsharp.Cast("Wanding");
+					Aimsharp.PrintMessage("Starting Wand", Color.Green);
+					return true;
+				}
+
+				return false;
+			}
+
+
+
+
+
+
+		private bool ShouldCastPowerWordShield()
+		{
+			// Check if player doesn't have Power Word: Shield buff and also doesn't have Weakened Soul debuff
+			if (!Aimsharp.HasBuff("Power Word: Shield", "player") && !Aimsharp.HasDebuff("Weakened Soul", "player"))
+			{
+				return true;
+			}
+			return false;
+		}
+
+
+
+		public override bool OutOfCombatTick()
+		{
+			
+			bool Fighting = Aimsharp.Range("target") <= 30 && Aimsharp.TargetIsEnemy();
+			bool Moving = Aimsharp.PlayerIsMoving();
+			bool HasBuffFort = Aimsharp.HasBuff("Power Word: Fortitude", "player");
+			bool HasBuffShadowProt = Aimsharp.HasBuff("Shadow Protection", "player");
+			bool HasTouch = Aimsharp.HasBuff("Touch of Weakness", "player");
+			bool HasTap = Aimsharp.HasBuff("Spirit Tap", "player");
+			bool HasInnFire = Aimsharp.HasBuff("Inner Fire", "player");
+			bool ShieldCheck = Aimsharp.HasDebuff("Weakened Soul", "player");
+			int currentManaPercentage = Aimsharp.Mana();
+			bool isAlive = Aimsharp.Health("target") > 0;
+			int SWPRemaining = Aimsharp.DebuffRemaining("Shadow Word: Pain", "target");
+			
+			
+			if (Aimsharp.CanCast("Holy Fire", "target", true, true) && !Moving && Fighting && Aimsharp.LastCast() != "Holy Fire")
+			{
+				Aimsharp.PrintMessage("Attempting to cast Holy Fire!", Color.Purple);
+				Aimsharp.Cast("Holy Fire");
+				return true;
+			}
+			if (Aimsharp.CanCast("Mind Blast", "target", true, true) && Fighting && !Moving)
+			{
+				Aimsharp.PrintMessage("Attempting to cast Mind Blast!", Color.Purple);  // This line will print the message.
+				Aimsharp.Cast("Mind Blast");
+				return true;
+			}
+			// if (Aimsharp.CanCast("Shadow Word: Pain", "target", true, true) && SWPRemaining < 50 && !Moving && Fighting && Aimsharp.HasBuff("Power Word: Shield", "player"))
+			// {
+				// Aimsharp.PrintMessage("Attempting to cast Pain!", Color.Purple);  // This line will print the message.
+				// Aimsharp.Cast("Shadow Word: Pain");
+				// return true;
+			// }
+			if (Aimsharp.CanCast("Power Word: Fortitude", "player") && !HasBuffFort)
+            {
+                Aimsharp.Cast("Power Word: Fortitude");
+                return true;
+            }
+			if (Aimsharp.CanCast("Shadow Protection", "player") && !HasBuffShadowProt)
+            {
+                Aimsharp.Cast("Shadow Protection");
+                return true;
+            }
+			if (Aimsharp.CanCast("Power Word: Shield", "player") && !Aimsharp.HasDebuff("Weakened Soul", "player") && Aimsharp.Range("target") <= 50 && Aimsharp.TargetIsEnemy() && isAlive)
+			{
+				Aimsharp.Cast("Power Word: Shield");
+				return true;
+			}
+			if (Aimsharp.CanCast("Inner Fire", "player") && !HasInnFire)
+			{
+				Aimsharp.Cast("Inner Fire");
+				return true;
+			}
+			if (Aimsharp.CanCast("Touch of Weakness", "player") && !HasTouch && (!HasTap || currentManaPercentage > 99))
+			{
+				Aimsharp.Cast("Touch of Weakness");
+				return true;
+			}
+			
+			return false;
+		}
+
+		
+	}
+}
